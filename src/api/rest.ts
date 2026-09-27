@@ -104,10 +104,7 @@ export async function registerRESTRoutes(app: FastifyInstance) {
         } catch { /* fall through */ }
       }
 
-      // NOTE: getAggregatedPrice reads price_points/price_aggregates, which
-      // have no network column yet — see getBestRoute's network param for
-      // the (currently SDEX-only) live per-network read.
-      const agg = await getAggregatedPrice(pair.pairKey)
+      const agg = await getAggregatedPrice(pair.pairKey, network)
       const route = await getBestRoute(pair.assetA, pair.assetB, pair.pairKey, 1000, network)
       const result = {
         assetA: pair.assetA.code,
