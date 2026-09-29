@@ -163,11 +163,18 @@ Lens gates `/price`, `/pools`, and `/candles` behind x402 micropayments on Stell
 curl http://localhost:3002/status
 # {
 #   "ok": true,
+#   "network": "testnet",
 #   "watchedPairs": ["XLM:native/USDC:GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"],
 #   "lastIndexedLedger": 53842917,
-#   "lastProcessedAt": "2026-05-07T18:45:11.220Z"
+#   "lastProcessedAt": "2026-05-07T18:45:11.220Z",
+#   "ingestLagSeconds": 4
 # }
 ```
+
+`/status` answers for one network — pass `?network=mainnet` (or the
+`x-network` header) to check the mainnet indexer instead. `ingestLagSeconds` is
+`null` until that network has ingested, and `lastIndexedLedger` is `null` until
+its SDEX ingester has recorded a trade.
 
 ### 2. Paid request without `X-PAYMENT` → `402` with payment requirements
 

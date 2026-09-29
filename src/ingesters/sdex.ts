@@ -50,7 +50,7 @@ export async function ingestPair(pair: WatchedPair, network: NetworkName = activ
         price,
         baseVolume: parseFloat(t.base_amount),
         counterVolume: parseFloat(t.counter_amount),
-        ledger: 0,
+        ledger: t.ledger,
         timestamp: new Date(t.ledger_close_time),
         eventId: t.id,
       }
@@ -67,8 +67,9 @@ export async function ingestPair(pair: WatchedPair, network: NetworkName = activ
       trades_ingested_total.inc({ pair: pair.pairKey }, points.length)
       last_trade_timestamp.set({ pair: pair.pairKey }, Math.floor(points[points.length - 1].timestamp.getTime() / 1000))
 
-      const lastCursor = trades.records[trades.records.length - 1].paging_token
-      await setIndexerCursor(stateId, lastCursor, network)
+      const lastRecord = trades.records[trades.records.length - 1]
+      // `ledger` is returned by Horizon but missing from the SDK's TradeRecord.
+      await setIndexerCursor(stateId, lastRecord.paging_token, network, (lastRecord as any).ledger)
       console.log(`[sdex] ${pair.pairKey}: ingested ${points.length} trades`)
 
       publishPriceUpdate({

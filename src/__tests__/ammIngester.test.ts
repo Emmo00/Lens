@@ -66,6 +66,7 @@ describe('AMM Ingester', () => {
               base_asset_type: 'native',
               base_amount: '10.0',
               counter_amount: '2.0',
+              ledger: 600001,
               ledger_close_time: '2024-01-01T00:00:00Z',
             }
           ]
@@ -83,9 +84,18 @@ describe('AMM Ingester', () => {
       expect.arrayContaining([
         expect.objectContaining({
           price: 0.2,
+          ledger: 600001,
         })
       ]),
       'mainnet'
+    )
+
+    // The cursor row carries the ledger too, so `/status` can report it.
+    expect(setIndexerCursor).toHaveBeenCalledWith(
+      'amm:mainnet:pool-1',
+      'p-1',
+      'mainnet',
+      600001
     )
   })
 })

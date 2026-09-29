@@ -141,7 +141,7 @@ export async function ingestPoolTrades(
         price,
         baseVolume: parseFloat(t.base_amount),
         counterVolume: parseFloat(t.counter_amount),
-        ledger: 0,
+        ledger: t.ledger,
         timestamp: new Date(t.ledger_close_time),
         eventId: t.id,
       }
@@ -157,8 +157,8 @@ export async function ingestPoolTrades(
     trades_ingested_total.inc({ pair: pair.pairKey }, points.length)
     last_trade_timestamp.set({ pair: pair.pairKey }, Math.floor(points[points.length - 1].timestamp.getTime() / 1000))
 
-    const lastCursor = records[records.length - 1].paging_token
-    await setIndexerCursor(stateId, lastCursor, network)
+    const lastRecord = records[records.length - 1]
+    await setIndexerCursor(stateId, lastRecord.paging_token, network, lastRecord.ledger)
     console.log(`[amm] Pool ${pool.id.slice(0, 8)}: ingested ${points.length} trades`)
 
     publishPriceUpdate({

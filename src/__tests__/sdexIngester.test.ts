@@ -64,6 +64,7 @@ describe('SDEX Ingester', () => {
           base_amount: '10.0',
           counter_amount: '2.0',
           price: { n: 2, d: 10 },
+          ledger: 512345,
           ledger_close_time: '2024-01-01T00:00:00Z',
         }
       ]
@@ -72,6 +73,17 @@ describe('SDEX Ingester', () => {
     await ingestPair(mockPair as any)
 
     expect(mocks.db.upsertPricePoints).toHaveBeenCalled()
+
+    // The trade's real ledger must reach both the stored price point and the
+    // indexer cursor — otherwise `/status`'s lastIndexedLedger stays null.
+    const points = mocks.db.upsertPricePoints.mock.calls[0][0]
+    expect(points[0].ledger).toBe(512345)
+    expect(mocks.db.setIndexerCursor).toHaveBeenCalledWith(
+      'sdex:testnet:XLM-USD',
+      'p-1',
+      'testnet',
+      512345
+    )
   })
 
   it('handles zero trades safely', async () => {
