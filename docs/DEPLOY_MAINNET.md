@@ -108,10 +108,10 @@ workflow and restore procedure.
 
 ## Running testnet + mainnet side-by-side
 
-Run **two separate deployments** (same image, one env set each). Storage must
-be network-segregated — the schema has no `network` column, so the same
-`pairKey` on two networks collides. Give each network its **own** database and
-Redis:
+Run **two separate deployments** (same image, one env set each). Give each
+network its **own** database and Redis: every row now carries a `network`
+discriminator (#114), but separate stores keep the two deployments — and any
+read path not yet network-scoped — from pooling networks.
 
 | | testnet node | mainnet node |
 |---|---|---|

@@ -24,12 +24,18 @@ Aggregates price data from Stellar's Classic Order Book (SDEX) and AMM Liquidity
 | GET | `/discovery/resources?type=&payTo=&network=&extensions=&limit=&offset=` | Bazaar catalog of x402-discoverable resources (spec: [`bazaar`](https://github.com/x402-foundation/x402/blob/main/specs/extensions/bazaar.md)) |
 
 Every route accepts an optional `?network=testnet\|mainnet` query param (or
-`x-network` header) to pick the Stellar network — default is `testnet`. An
-unrecognised value gets `400`. The `/price/*` endpoints' live SDEX pricing and
-x402 payment `network`/`payTo` are fully per-request today; DB-backed reads
-(candles, history, pools, AMM pricing) are still served from whichever
-network this instance is currently indexing (`STELLAR_NETWORK`) — that data
-layer isn't network-partitioned yet.
+`x-network` header) to pick the Stellar network; an unrecognised value gets
+`400`, and an omitted value falls back to this instance's `STELLAR_NETWORK`
+(`testnet` unless configured). Live SDEX pricing, `/price/*/route`,
+`/price/*/depth`, `/spreads` and the x402 payment `network`/`payTo` are
+resolved per request, and every stored row now carries a `network`
+discriminator (#114). Several DB-backed reads are still not request-scoped,
+though: the aggregate behind `/price/:assetA/:assetB` and
+`/price/:assetA/:assetB/history`, `/candles/:assetA/:assetB` and `/pools`
+query by pair/pool only, and `/prices/history` scopes to `STELLAR_NETWORK`
+rather than the requested network. On an instance indexing both networks
+(`ENABLED_NETWORKS`) those responses can interleave testnet and mainnet data;
+until they are network-scoped, run one network per instance.
 
 ```bash
 curl "https://api.example.com/price/XLM/USDC?network=mainnet"
