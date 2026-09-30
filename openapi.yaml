@@ -27,6 +27,9 @@ paths:
                 properties:
                   ok:
                     type: boolean
+                  network:
+                    type: string
+                    enum: [testnet, mainnet]
                   watchedPairs:
                     type: array
                     items:
@@ -37,6 +40,9 @@ paths:
                   lastProcessedAt:
                     type: string
                     format: date-time
+                    nullable: true
+                  ingestLagSeconds:
+                    type: integer
                     nullable: true
         '429':
           $ref: '#/components/responses/TooManyRequests'

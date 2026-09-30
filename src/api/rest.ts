@@ -69,15 +69,29 @@ export async function registerRESTRoutes(app: FastifyInstance) {
   installResponseValidation(app)
 
   // GET /status — public health/monitoring endpoint (no API key required)
-  app.get('/status', { config: { public: true }, schema: { response: { 200: statusResponseSchema } } }, async () => {
+  app.get('/status', { config: { public: true }, schema: { response: { 200: statusResponseSchema } } }, async (req) => {
+    const network = req.network ?? activeNetwork
     const result = await pgPool.query(
-      `SELECT last_ledger, last_processed_at FROM indexer_state ORDER BY updated_at DESC LIMIT 1`
+      `SELECT last_ledger, last_processed_at
+         FROM indexer_state
+        WHERE network = $1
+        ORDER BY updated_at DESC
+        LIMIT 1`,
+      [network]
     )
+    const lastProcessedAt = result.rows[0]?.last_processed_at ?? null
     return {
       ok: true,
-      watchedPairs: config.pairs.map(p => p.pairKey),
+      network,
+      watchedPairs: getNetworkConfig(network).pairs.map(p => p.pairKey),
       lastIndexedLedger: result.rows[0]?.last_ledger ?? null,
-      lastProcessedAt: result.rows[0]?.last_processed_at ?? null,
+      lastProcessedAt,
+      // Seconds since the last write for this network — a stalled ingester is
+      // visible to `/status` polling without needing Prometheus. Null until the
+      // network has ingested at least once.
+      ingestLagSeconds: lastProcessedAt
+        ? Math.max(0, Math.round((Date.now() - new Date(lastProcessedAt).getTime()) / 1000))
+        : null,
     }
   })
 
