@@ -11,9 +11,11 @@ Soroban RPC provider.
 ## Why mainnet is different from testnet
 
 Lens is already closer to mainnet than testnet out of the box: its Soroswap
-factory, Reflector oracle and Aquarius defaults are **mainnet** addresses. To
-point a node at mainnet you mostly need to flip the network passphrase,
-Horizon/RPC URLs and set mainnet `WATCHED_PAIRS`.
+factory and Aquarius defaults are **mainnet** addresses. The Reflector oracle
+has no built-in default — supply `REFLECTOR_CONTRACT_ID_MAINNET` from
+[reflector.network](https://reflector.network) to enable it. To point a node at
+mainnet you mostly need to flip the network passphrase, Horizon/RPC URLs and
+set mainnet `WATCHED_PAIRS`.
 
 Two things have no free mainnet equivalent:
 
@@ -108,10 +110,10 @@ workflow and restore procedure.
 
 ## Running testnet + mainnet side-by-side
 
-Run **two separate deployments** (same image, one env set each). Storage must
-be network-segregated — the schema has no `network` column, so the same
-`pairKey` on two networks collides. Give each network its **own** database and
-Redis:
+Run **two separate deployments** (same image, one env set each). Give each
+network its **own** database and Redis: every row now carries a `network`
+discriminator (#114), but separate stores keep the two deployments — and any
+read path not yet network-scoped — from pooling networks.
 
 | | testnet node | mainnet node |
 |---|---|---|
