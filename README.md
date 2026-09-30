@@ -27,11 +27,19 @@ Aggregates price data from Stellar's Classic Order Book (SDEX) and AMM Liquidity
 
 Every route accepts an optional `?network=testnet\|mainnet` query param (or
 `x-network` header) to pick the Stellar network — default is `testnet`. An
-unrecognised value gets `400`. The `/price/*` endpoints' live SDEX pricing and
-x402 payment `network`/`payTo` are fully per-request today; DB-backed reads
-(candles, history, pools, AMM pricing) are still served from whichever
-network this instance is currently indexing (`STELLAR_NETWORK`) — that data
-layer isn't network-partitioned yet.
+unrecognised value gets `400`, and an omitted value falls back to this
+instance's `STELLAR_NETWORK`.
+
+Per-request today: `/price/:assetA/:assetB` (its VWAP, OHLCV, AMM and
+best-route reads), `/price/:assetA/:assetB/route`, `/price/:assetA/:assetB/depth`,
+`/prices/history`, `/screener`, `/pools`, and the x402 payment
+`network`/`payTo`.
+
+Still reading across both networks, and ignoring the parameter:
+`/candles/:assetA/:assetB`, `/price/twap/*`, `/price/vwap/*`, and
+`/price/:assetA/:assetB/history` — the last one reads `price_aggregates`, which
+is now written per network, so on an instance running both networks
+(`ENABLED_NETWORKS`) its buckets interleave the two chains.
 
 ```bash
 curl "https://api.example.com/price/XLM/USDC?network=mainnet"
