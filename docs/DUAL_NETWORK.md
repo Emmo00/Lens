@@ -35,14 +35,16 @@ of colliding. Redis cache keys carry a per-network prefix too.
 
 ## Ordered work
 
-All of the items below are implemented and merged; the table is kept as a
-reference for the dependency order.
+Every item below is implemented and merged. The issues for #114–#120 are
+closed; #113 is still open as a tracking item only — its code shipped
+(`config.networks.testnet` / `.mainnet`, `src/config.ts`). The table is kept as
+a reference for the dependency order.
 
 Dependencies: **#113 → #115 → #116 → #117**; #114 before the network selector.
 
 | # | Issue | Dep | Status |
 |---|-------|-----|--------|
-| [#113](../../issues/113) | `config.ts` → per-network config map | — | ✅ Done |
+| [#113](../../issues/113) | `config.ts` → per-network config map | — | ✅ Code merged (issue still open) |
 | [#114](../../issues/114) | `network` discriminator on all models + Redis prefix | — | ✅ Done |
 | [#115](../../issues/115) | Per-network Horizon/RPC clients across ingesters | #113 | ✅ Done |
 | [#116](../../issues/116) | Per-network Soroswap/Reflector/Aquarius/token-list | #113 | ✅ Done |
