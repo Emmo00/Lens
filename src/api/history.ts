@@ -64,9 +64,12 @@ export async function queryHistory(
  * The network is resolved by the network selector (`?network=` / `x-network`,
  * defaulting to this deployment's active network) and echoed in the response.
  *
- * Note: this path is matched by the x402 `/price` prefix gate, so it requires
- * payment when ORACLE_PAYMENT_ADDRESS is configured — consistent with the other
- * price-data endpoints.
+ * Note: this path is NOT gated by x402. It used to be, by accident — the old
+ * gate matched `req.url.startsWith('/price')`, which swept up `/prices/...`
+ * along with `/pricing` and `/poolsize`. Since #190 the gate matches the routed
+ * path at a segment boundary, so `/prices/history` is free. Adding it to
+ * GATED_ROUTES in src/middleware/x402.ts is a deliberate decision, not a
+ * side effect.
  */
 export async function registerHistoryRoutes(app: FastifyInstance) {
   app.get<{
