@@ -1,7 +1,8 @@
 import { amm_snapshots_total, trades_ingested_total, last_trade_timestamp } from '../metrics'
 import { config, activeNetwork, getNetworkConfig, type NetworkName } from '../config'
 import { getActivePairs } from '../pairsRegistry'
-import { upsertPricePoints, getIndexerCursor, setIndexerCursor, prisma } from '../db'
+import { upsertPricePoints, getIndexerState, setIndexerCursor, prisma } from '../db'
+import { resolvePageLedgers } from './toid'
 import { dispatchPriceUpdate } from '../webhookDispatcher'
 import { publishPriceUpdate } from '../events'
 import type { WatchedPair } from '../types'
@@ -114,7 +115,8 @@ export async function ingestPoolTrades(
   network: NetworkName = activeNetwork
 ): Promise<void> {
   const stateId = `amm:${network}:${pool.id}`
-  const cursor = await getIndexerCursor(stateId, network) ?? '0'
+  const state = await getIndexerState(stateId, network)
+  const cursor = state.cursor ?? '0'
 
   try {
     const response = await fetch(
@@ -125,7 +127,17 @@ export async function ingestPoolTrades(
 
     if (!records.length) return
 
-    const points = records.map((t: any) => {
+    // Horizon returns no `ledger` on a pool trade; it lives in the TOID prefix.
+    const ledgers = resolvePageLedgers(
+      records.map((t: any) => t.paging_token ?? t.id),
+      state.ledger,
+    )
+    if (ledgers === null) {
+      console.error(`[amm] pool ${pool.id.slice(0, 8)}: no ledger derivable from ${records.length} trades; skipping batch`)
+      return
+    }
+
+    const points = records.map((t: any, i: number) => {
       const baseCode = t.base_asset_type === 'native' ? 'XLM' : t.base_asset_code
       const isForward = baseCode === pair.assetA.code
       const price = isForward
@@ -141,7 +153,7 @@ export async function ingestPoolTrades(
         price,
         baseVolume: parseFloat(t.base_amount),
         counterVolume: parseFloat(t.counter_amount),
-        ledger: t.ledger,
+        ledger: ledgers[i],
         timestamp: new Date(t.ledger_close_time),
         eventId: t.id,
       }
@@ -158,7 +170,7 @@ export async function ingestPoolTrades(
     last_trade_timestamp.set({ pair: pair.pairKey }, Math.floor(points[points.length - 1].timestamp.getTime() / 1000))
 
     const lastRecord = records[records.length - 1]
-    await setIndexerCursor(stateId, lastRecord.paging_token, network, lastRecord.ledger)
+    await setIndexerCursor(stateId, lastRecord.paging_token, network, ledgers[ledgers.length - 1])
     console.log(`[amm] Pool ${pool.id.slice(0, 8)}: ingested ${points.length} trades`)
 
     publishPriceUpdate({

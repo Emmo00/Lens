@@ -3,7 +3,8 @@ import { trades_ingested_total, last_trade_timestamp } from '../metrics'
 import { config, activeNetwork, type NetworkName } from '../config'
 import { getHorizonServer } from '../network/clients'
 import { getActivePairs } from '../pairsRegistry'
-import { upsertPricePoints, getIndexerCursor, setIndexerCursor } from '../db'
+import { upsertPricePoints, getIndexerState, setIndexerCursor } from '../db'
+import { resolvePageLedgers } from './toid'
 import { dispatchPriceUpdate } from '../webhookDispatcher'
 import { publishPriceUpdate } from '../events'
 import type { WatchedPair } from '../types'
@@ -18,7 +19,8 @@ function toAsset(asset: { code: string; issuer: string | null }): Asset {
 
 export async function ingestPair(pair: WatchedPair, network: NetworkName = activeNetwork): Promise<void> {
   const stateId = `sdex:${network}:${pair.pairKey}`
-  const cursor = await getIndexerCursor(stateId, network) ?? '0'
+  const state = await getIndexerState(stateId, network)
+  const cursor = state.cursor ?? '0'
 
   try {
     const assetA = toAsset(pair.assetA)
@@ -32,9 +34,20 @@ export async function ingestPair(pair: WatchedPair, network: NetworkName = activ
       .order('asc')
       .call()
 
-    if (!trades.records.length) return
+    const records = trades.records
+    if (!records.length) return
 
-    const points = trades.records.map((t: any) => {
+    // Horizon returns no `ledger` on a trade; it lives in the TOID prefix.
+    const ledgers = resolvePageLedgers(
+      records.map((t: any) => t.paging_token ?? t.id),
+      state.ledger,
+    )
+    if (ledgers === null) {
+      console.error(`[sdex] ${pair.pairKey}: no ledger derivable from ${records.length} trades; skipping batch`)
+      return
+    }
+
+    const points = records.map((t: any, i: number) => {
       const baseCode = t.base_asset_type === 'native' ? 'XLM' : t.base_asset_code
       const isForward = baseCode === pair.assetA.code
 
@@ -50,7 +63,7 @@ export async function ingestPair(pair: WatchedPair, network: NetworkName = activ
         price,
         baseVolume: parseFloat(t.base_amount),
         counterVolume: parseFloat(t.counter_amount),
-        ledger: t.ledger,
+        ledger: ledgers[i],
         timestamp: new Date(t.ledger_close_time),
         eventId: t.id,
       }
@@ -67,9 +80,8 @@ export async function ingestPair(pair: WatchedPair, network: NetworkName = activ
       trades_ingested_total.inc({ pair: pair.pairKey }, points.length)
       last_trade_timestamp.set({ pair: pair.pairKey }, Math.floor(points[points.length - 1].timestamp.getTime() / 1000))
 
-      const lastRecord = trades.records[trades.records.length - 1]
-      // `ledger` is returned by Horizon but missing from the SDK's TradeRecord.
-      await setIndexerCursor(stateId, lastRecord.paging_token, network, (lastRecord as any).ledger)
+      const lastRecord = records[records.length - 1]
+      await setIndexerCursor(stateId, lastRecord.paging_token, network, ledgers[ledgers.length - 1])
       console.log(`[sdex] ${pair.pairKey}: ingested ${points.length} trades`)
 
       publishPriceUpdate({
