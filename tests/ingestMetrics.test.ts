@@ -15,7 +15,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   upsertPricePoints: vi.fn(),
-  getIndexerCursor: vi.fn(),
+  getIndexerState: vi.fn(),
   setIndexerCursor: vi.fn(),
   poolSnapshotCreate: vi.fn(),
   query: vi.fn(),
@@ -28,7 +28,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('../src/db', () => ({
   upsertPricePoints: mocks.upsertPricePoints,
-  getIndexerCursor: mocks.getIndexerCursor,
+  getIndexerState: mocks.getIndexerState,
   setIndexerCursor: mocks.setIndexerCursor,
   prisma: { poolSnapshot: { create: mocks.poolSnapshotCreate } },
   pgPool: { query: mocks.query },
@@ -111,7 +111,9 @@ beforeEach(() => {
   price_snapshots_total.reset()
   last_trade_timestamp.reset()
 
-  mocks.getIndexerCursor.mockResolvedValue('0')
+  // These fixtures use synthetic paging tokens, which carry no TOID, so the
+  // ingesters fall back to the ledger stored on the cursor row.
+  mocks.getIndexerState.mockResolvedValue({ cursor: '0', ledger: 64702061 })
   mocks.getActivePairs.mockReturnValue([pair])
   mocks.dispatchPriceUpdate.mockResolvedValue(undefined)
   mocks.query.mockResolvedValue({ rowCount: 1 })

@@ -12,7 +12,9 @@ const mocks = vi.hoisted(() => ({
       },
     },
     upsertPricePoints: vi.fn().mockResolvedValue(undefined),
-    getIndexerCursor: vi.fn().mockResolvedValue('0'),
+    // Synthetic paging tokens carry no TOID, so the ingesters fall back to
+    // the ledger stored on the cursor row.
+    getIndexerState: vi.fn().mockResolvedValue({ cursor: '0', ledger: 64702061 }),
     setIndexerCursor: vi.fn().mockResolvedValue(undefined),
   },
   horizonCall: vi.fn(),
@@ -21,7 +23,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../db', () => ({
   prisma: mocks.db.prisma,
   upsertPricePoints: mocks.db.upsertPricePoints,
-  getIndexerCursor: mocks.db.getIndexerCursor,
+  getIndexerState: mocks.db.getIndexerState,
   setIndexerCursor: mocks.db.setIndexerCursor,
 }))
 
