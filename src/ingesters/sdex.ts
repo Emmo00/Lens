@@ -8,8 +8,16 @@ import { dispatchPriceUpdate } from '../webhookDispatcher'
 import { publishPriceUpdate } from '../events'
 import type { WatchedPair } from '../types'
 
-// Last seen price per pairKey — used for threshold crossing detection
+// Last seen price per (network, pairKey) — used for threshold crossing detection
 const lastPrice = new Map<string, number>()
+
+export function _resetLastPrice(): void {
+  lastPrice.clear()
+}
+
+export function _getLastPrice(network: NetworkName, pairKey: string): number | undefined {
+  return lastPrice.get(`${network}:${pairKey}`)
+}
 
 function toAsset(asset: { code: string; issuer: string | null }): Asset {
   if (!asset.issuer || asset.code === 'XLM') return Asset.native()
@@ -57,15 +65,18 @@ export async function ingestPair(pair: WatchedPair, network: NetworkName = activ
     })
 
     if (points.length > 0) {
-      const previousPrice = lastPrice.get(pair.pairKey) ?? points[0].price
+      const trackerKey = `${network}:${pair.pairKey}`
+      const previousPrice = lastPrice.get(trackerKey) ?? points[0].price
       const currentPrice = points[points.length - 1].price
 
       await upsertPricePoints(points, network)
-      lastPrice.set(pair.pairKey, currentPrice)
+      lastPrice.set(trackerKey, currentPrice)
 
-      // Metrics instrumentation
-      trades_ingested_total.inc({ pair: pair.pairKey }, points.length)
-      last_trade_timestamp.set({ pair: pair.pairKey }, Math.floor(points[points.length - 1].timestamp.getTime() / 1000))
+      // Metrics instrumentation. `network` is the loop's own network, not
+      // `activeNetwork` — one ingester set runs per enabled network and they
+      // all share this registry.
+      trades_ingested_total.inc({ pair: pair.pairKey, network }, points.length)
+      last_trade_timestamp.set({ pair: pair.pairKey, network }, Math.floor(points[points.length - 1].timestamp.getTime() / 1000))
 
       const lastCursor = trades.records[trades.records.length - 1].paging_token
       await setIndexerCursor(stateId, lastCursor, network)
@@ -83,6 +94,7 @@ export async function ingestPair(pair: WatchedPair, network: NetworkName = activ
         assetB: pair.assetB.code,
         previousPrice,
         currentPrice,
+        network,
       }).catch(err => console.error('[sdex] webhook dispatch error:', err.message))
     }
   } catch (err) {

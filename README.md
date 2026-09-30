@@ -15,27 +15,31 @@ Aggregates price data from Stellar's Classic Order Book (SDEX) and AMM Liquidity
 | Method | Path | Description |
 |---|---|---|
 | GET | `/price/:assetA/:assetB` | Current VWAP, 24h volume, best route |
+| GET | `/price/twap/:assetA/:assetB` | TWAP pricing over a time window |
+| GET | `/price/vwap/:assetA/:assetB` | VWAP pricing over a time window |
 | GET | `/price/:assetA/:assetB/route?amount=1000` | Best execution route for a given amount |
 | GET | `/price/:assetA/:assetB/history?window=1h` | OHLCV history (`1m`, `5m`, `1h`, `24h`) |
-| GET | `/prices/history?pair=XLM/USDC&from=…&to=…&interval=1m` | Historical 1-minute price snapshots, optionally aggregated (`1m`, `5m`, `1h`); ~30-day retention |
+| GET | `/prices/history?pair=XLM/USDC&from=…&to=…&interval=1m` | Historical 1-minute price snapshots, optionally aggregated (`1m`, `5m`, `1h`); honours `?network=`; ~30-day retention |
 | GET | `/pools` | Active AMM pools being watched |
 | GET | `/pairs` | Watched trading pairs |
 | GET | `/status` | Indexer health |
 | GET | `/discovery/resources?type=&payTo=&network=&extensions=&limit=&offset=` | Bazaar catalog of x402-discoverable resources (spec: [`bazaar`](https://github.com/x402-foundation/x402/blob/main/specs/extensions/bazaar.md)) |
 
 Every route accepts an optional `?network=testnet\|mainnet` query param (or
-`x-network` header) to pick the Stellar network; an unrecognised value gets
-`400`, and an omitted value falls back to this instance's `STELLAR_NETWORK`
-(`testnet` unless configured). Live SDEX pricing, `/price/*/route`,
-`/price/*/depth`, `/spreads` and the x402 payment `network`/`payTo` are
-resolved per request, and every stored row now carries a `network`
-discriminator (#114). Several DB-backed reads are still not request-scoped,
-though: the aggregate behind `/price/:assetA/:assetB` and
-`/price/:assetA/:assetB/history`, `/candles/:assetA/:assetB` and `/pools`
-query by pair/pool only, and `/prices/history` scopes to `STELLAR_NETWORK`
-rather than the requested network. On an instance indexing both networks
-(`ENABLED_NETWORKS`) those responses can interleave testnet and mainnet data;
-until they are network-scoped, run one network per instance.
+`x-network` header) to pick the Stellar network — default is `testnet`. An
+unrecognised value gets `400`, and an omitted value falls back to this
+instance's `STELLAR_NETWORK`.
+
+Per-request today: `/price/:assetA/:assetB` (its VWAP, OHLCV, AMM and
+best-route reads), `/price/:assetA/:assetB/route`, `/price/:assetA/:assetB/depth`,
+`/prices/history`, `/screener`, `/pools`, and the x402 payment
+`network`/`payTo`.
+
+Still reading across both networks, and ignoring the parameter:
+`/candles/:assetA/:assetB`, `/price/twap/*`, `/price/vwap/*`, and
+`/price/:assetA/:assetB/history` — the last one reads `price_aggregates`, which
+is now written per network, so on an instance running both networks
+(`ENABLED_NETWORKS`) its buckets interleave the two chains.
 
 ```bash
 curl "https://api.example.com/price/XLM/USDC?network=mainnet"
@@ -97,6 +101,22 @@ histogram_quantile(0.95,
 
 See [`docs/http-metrics.md`](docs/http-metrics.md) for the full label reference,
 the bucket rationale and suggested alerting rules.
+
+The ingestion metrics are labelled by `network` as well, so a dual-network
+deployment reports each network separately:
+
+| Metric | Type | Labels |
+|---|---|---|
+| `trades_ingested_total` | Counter | `pair`, `network` |
+| `amm_snapshots_total` | Counter | `pool`, `network` |
+| `price_snapshots_total` | Counter | `network` |
+| `last_trade_timestamp` | Gauge | `pair`, `network` |
+
+`last_trade_timestamp` is a gauge, so without the `network` label one network's
+ingester overwrites the other's value for the same pair — which would make the
+staleness signal silently unusable. See
+[`docs/ingest-metrics.md`](docs/ingest-metrics.md) for the cardinality notes
+(`pairs x networks`) and a staleness alert.
 
 ### GraphQL Subscriptions (live prices)
 

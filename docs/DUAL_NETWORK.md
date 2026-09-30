@@ -28,8 +28,8 @@ of colliding. Redis cache keys carry a per-network prefix too.
 | `HORIZON_URL` | `https://horizon-testnet.stellar.org` | `https://horizon.stellar.org` |
 | `RPC_URL` | `https://soroban-testnet.stellar.org` | external provider (**secret — host env only**) |
 | `NETWORK_PASSPHRASE` | `Test SDF Network ; September 2015` | `Public Global Stellar Network ; September 2015` |
-| `SOROSWAP_FACTORY_ADDRESS` | `CDKP5WSE…` | `CA4HEQTL…` |
-| `REFLECTOR_CONTRACT_ID` | — (disabled) | `CCYXZMNH…` |
+| `SOROSWAP_FACTORY_ADDRESS` | `CDP3HMUH6SMS3S7NPGNDJLULCOXXEPSHY4JKUKMBNQMATHDHWXRRJTBY` | `CA4HEQTL2WPEUYKYKCDOHCDNIV4QHNJ7EL4J4NQ6VADP7SYHVRYZ7AW2` |
+| `REFLECTOR_CONTRACT_ID` | — (disabled) | — (disabled) — paste an id from [reflector.network](https://reflector.network) to enable |
 | `WATCHED_PAIRS` | testnet USDC issuer | mainnet USDC issuer |
 | `DATABASE_URL` / `REDIS_URL` | testnet | **separate** mainnet instances |
 
