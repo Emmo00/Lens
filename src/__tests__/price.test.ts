@@ -178,3 +178,25 @@ describe('TWAP/VWAP Input Validation', () => {
     expect(res.statusCode).toBe(400)
   })
 })
+
+describe('TWAP/VWAP error handling', () => {
+  // The pg driver puts the connection string in its error messages, so echoing
+  // err.message would publish the Postgres credentials to any caller.
+  it('returns 500 without leaking the database error', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    mockQuery.mockRejectedValue(
+      new Error('connection refused postgres://lens:hunter2@db.internal:5432/lens')
+    )
+    const app = await buildApp()
+
+    for (const url of ['/price/twap/XLM/USDC', '/price/vwap/XLM/USDC']) {
+      const res = await app.inject({ method: 'GET', url })
+      expect(res.statusCode).toBe(500)
+      expect(res.body).not.toMatch(/hunter2/)
+      expect(res.body).not.toMatch(/postgres:\/\//)
+    }
+
+    spy.mockRestore()
+    await app.close()
+  })
+})

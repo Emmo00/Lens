@@ -61,7 +61,10 @@ export async function registerPriceRoutes(app: FastifyInstance) {
           filterMethod: result.filterMethod,
         }
       } catch (err) {
-        return reply.status(500).send({ error: `TWAP computation failed: ${(err as Error).message}` })
+        // A driver error message can carry the connection string, and so the
+        // Postgres credentials. Log it; never put it in the response body.
+        console.error('[price] TWAP computation failed:', (err as Error).message)
+        return reply.status(500).send({ error: 'TWAP computation failed' })
       }
     }
   )
@@ -107,7 +110,9 @@ export async function registerPriceRoutes(app: FastifyInstance) {
           filterMethod: result.filterMethod,
         }
       } catch (err) {
-        return reply.status(500).send({ error: `VWAP computation failed: ${(err as Error).message}` })
+        // Same as TWAP above: the driver message can contain credentials.
+        console.error('[price] VWAP computation failed:', (err as Error).message)
+        return reply.status(500).send({ error: 'VWAP computation failed' })
       }
     }
   )
