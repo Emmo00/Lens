@@ -11,9 +11,11 @@ Soroban RPC provider.
 ## Why mainnet is different from testnet
 
 Lens is already closer to mainnet than testnet out of the box: its Soroswap
-factory, Reflector oracle and Aquarius defaults are **mainnet** addresses. To
-point a node at mainnet you mostly need to flip the network passphrase,
-Horizon/RPC URLs and set mainnet `WATCHED_PAIRS`.
+factory and Aquarius defaults are **mainnet** addresses. The Reflector oracle
+has no built-in default — supply `REFLECTOR_CONTRACT_ID_MAINNET` from
+[reflector.network](https://reflector.network) to enable it. To point a node at
+mainnet you mostly need to flip the network passphrase, Horizon/RPC URLs and
+set mainnet `WATCHED_PAIRS`.
 
 Two things have no free mainnet equivalent:
 

@@ -84,7 +84,7 @@ npm test                          # full suite (vitest run)
 npx vitest run path/to/file.test.ts   # a single file
 ```
 
-The suite is ~47 files / ~400 tests covering route handlers, price math
+The suite is ~53 files / ~520 tests covering route handlers, price math
 (including property-based tests with [fast-check](https://fast-check.dev)),
 the x402 flow, per-network config and ingesters, HTTP metrics, and integration
 scenarios under `tests/`. Open test work is tracked under
