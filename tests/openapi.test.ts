@@ -63,6 +63,27 @@ describe('OpenAPI route coverage', () => {
     expect(missing, `Undocumented operations: ${JSON.stringify(missing)}`).toEqual([])
   })
 
+  it('documents only paths that are actually registered', () => {
+    const registeredPaths = new Set(registered.map(r => r.path))
+    const phantom = Object.keys(spec.paths).filter(p => !registeredPaths.has(p))
+    expect(phantom, `Documented but unregistered: ${JSON.stringify(phantom)}`).toEqual([])
+  })
+
+  it('documents only operations that are actually registered', () => {
+    const registeredOperations = new Set(
+      registered.map(r => `${r.method.toLowerCase()} ${r.path}`),
+    )
+    const phantom: string[] = []
+    for (const [path, operations] of Object.entries(spec.paths)) {
+      for (const method of Object.keys(operations)) {
+        if (!registeredOperations.has(`${method.toLowerCase()} ${path}`)) {
+          phantom.push(`${method.toUpperCase()} ${path}`)
+        }
+      }
+    }
+    expect(phantom, `Documented but unregistered: ${JSON.stringify(phantom)}`).toEqual([])
+  })
+
   it('allow-lists only routes that are actually registered', () => {
     const registeredPaths = new Set(registered.map(r => r.path))
     const stale = INTERNAL_ROUTES.filter(p => !registeredPaths.has(p))

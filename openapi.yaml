@@ -60,6 +60,7 @@ paths:
           schema:
             type: string
           example: USDC
+        - $ref: '#/components/parameters/NetworkQuery'
       responses:
         '200':
           description: Aggregated price data
@@ -97,6 +98,7 @@ paths:
           schema:
             type: number
             default: 1000
+        - $ref: '#/components/parameters/NetworkQuery'
       responses:
         '200':
           description: Best route information
@@ -166,6 +168,8 @@ paths:
       summary: Get AMM liquidity pool reserves and spot prices
       security:
         - x402: []
+      parameters:
+        - $ref: '#/components/parameters/NetworkQuery'
       responses:
         '200':
           description: List of pools
@@ -314,6 +318,7 @@ paths:
           schema:
             type: string
             format: date-time
+        - $ref: '#/components/parameters/NetworkQuery'
       responses:
         '200':
           description: Historical price snapshots
@@ -324,6 +329,9 @@ paths:
                 properties:
                   pair:
                     type: string
+                  network:
+                    type: string
+                    enum: [testnet, mainnet]
                   interval:
                     type: string
                   from:
@@ -358,6 +366,8 @@ paths:
       operationId: listPairs
       summary: List all active trading pairs
       security: []
+      parameters:
+        - $ref: '#/components/parameters/NetworkQuery'
       responses:
         '200':
           description: List of pairs
@@ -503,7 +513,6 @@ paths:
             type: string
             enum: [iqr, modified_zscore]
             default: iqr
-        - $ref: '#/components/parameters/NetworkQuery'
       responses:
         '200':
           description: TWAP result
@@ -560,7 +569,6 @@ paths:
             type: string
             enum: [iqr, modified_zscore]
             default: iqr
-        - $ref: '#/components/parameters/NetworkQuery'
       responses:
         '200':
           description: VWAP result
@@ -665,7 +673,6 @@ paths:
           schema:
             type: string
           example: XLM
-        - $ref: '#/components/parameters/NetworkQuery'
       responses:
         '200':
           description: Price comparison
@@ -699,11 +706,6 @@ paths:
           required: false
           schema:
             type: number
-        - name: market_cap
-          in: query
-          required: false
-          schema:
-            type: number
         - name: price_min
           in: query
           required: false
@@ -724,7 +726,7 @@ paths:
           required: false
           schema:
             type: string
-            enum: [volume, change_24h, market_cap, price, liquidity]
+            enum: [volume, change_24h, price, liquidity]
             default: volume
         - name: order
           in: query
@@ -780,7 +782,6 @@ paths:
           schema:
             type: string
             default: USD
-        - $ref: '#/components/parameters/NetworkQuery'
       responses:
         '200':
           description: Benchmark statistics
@@ -823,7 +824,6 @@ paths:
           style: form
           explode: true
           example: [0.6, 0.4]
-        - $ref: '#/components/parameters/NetworkQuery'
       responses:
         '200':
           description: Basket price
@@ -1515,8 +1515,6 @@ components:
         change_24h:
           type: number
         liquidity:
-          type: number
-        market_cap:
           type: number
 
     ScreenerResponse:

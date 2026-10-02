@@ -15,8 +15,6 @@ Aggregates price data from Stellar's Classic Order Book (SDEX) and AMM Liquidity
 | Method | Path | Description |
 |---|---|---|
 | GET | `/price/:assetA/:assetB` | Current VWAP, 24h volume, best route |
-| GET | `/price/twap/:assetA/:assetB` | TWAP pricing over a time window |
-| GET | `/price/vwap/:assetA/:assetB` | VWAP pricing over a time window |
 | GET | `/price/:assetA/:assetB/route?amount=1000` | Best execution route for a given amount |
 | GET | `/price/:assetA/:assetB/depth?amount=1000` | Simulated order-book depth and execution slippage |
 | GET | `/price/:assetA/:assetB/history?window=1h` | OHLCV history (`1m`, `5m`, `1h`, `24h`) |
@@ -48,10 +46,11 @@ missing from the spec. Operator-only and non-HTTP routes (`/admin/keys*`,
 `/admin/usage*`, `/metrics`, `/ws`, `/graphiql*`) are deliberately excluded via
 the commented allow-list in [`src/openapi/coverage.ts`](src/openapi/coverage.ts).
 
-Every route accepts an optional `?network=testnet\|mainnet` query param (or
-`x-network` header) to pick the Stellar network — default is `testnet`. An
-unrecognised value gets `400`, and an omitted value falls back to this
-instance's `STELLAR_NETWORK`.
+The `?network=testnet\|mainnet` query param (or `x-network` header) selects the
+Stellar network. It is validated on every request — an unrecognised value gets a
+`400` — and defaults to this instance's `STELLAR_NETWORK`. Only the routes whose
+spec entry declares a `network` parameter answer for the selected network; the
+ones listed below still read a single instance-wide network.
 
 Per-request today: `/price/:assetA/:assetB` (its VWAP, OHLCV, AMM and
 best-route reads), `/price/:assetA/:assetB/route`, `/price/:assetA/:assetB/depth`,

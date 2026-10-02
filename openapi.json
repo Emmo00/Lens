@@ -85,6 +85,9 @@
               "type": "string"
             },
             "example": "USDC"
+          },
+          {
+            "$ref": "#/components/parameters/NetworkQuery"
           }
         ],
         "responses": {
@@ -144,6 +147,9 @@
               "type": "number",
               "default": 1000
             }
+          },
+          {
+            "$ref": "#/components/parameters/NetworkQuery"
           }
         ],
         "responses": {
@@ -255,6 +261,11 @@
         "security": [
           {
             "x402": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/NetworkQuery"
           }
         ],
         "responses": {
@@ -489,6 +500,9 @@
               "type": "string",
               "format": "date-time"
             }
+          },
+          {
+            "$ref": "#/components/parameters/NetworkQuery"
           }
         ],
         "responses": {
@@ -501,6 +515,13 @@
                   "properties": {
                     "pair": {
                       "type": "string"
+                    },
+                    "network": {
+                      "type": "string",
+                      "enum": [
+                        "testnet",
+                        "mainnet"
+                      ]
                     },
                     "interval": {
                       "type": "string"
@@ -556,6 +577,11 @@
         "operationId": "listPairs",
         "summary": "List all active trading pairs",
         "security": [],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/NetworkQuery"
+          }
+        ],
         "responses": {
           "200": {
             "description": "List of pairs",
@@ -777,9 +803,6 @@
               ],
               "default": "iqr"
             }
-          },
-          {
-            "$ref": "#/components/parameters/NetworkQuery"
           }
         ],
         "responses": {
@@ -871,9 +894,6 @@
               ],
               "default": "iqr"
             }
-          },
-          {
-            "$ref": "#/components/parameters/NetworkQuery"
           }
         ],
         "responses": {
@@ -1031,9 +1051,6 @@
               "type": "string"
             },
             "example": "XLM"
-          },
-          {
-            "$ref": "#/components/parameters/NetworkQuery"
           }
         ],
         "responses": {
@@ -1087,14 +1104,6 @@
             }
           },
           {
-            "name": "market_cap",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "number"
-            }
-          },
-          {
             "name": "price_min",
             "in": "query",
             "required": false,
@@ -1127,7 +1136,6 @@
               "enum": [
                 "volume",
                 "change_24h",
-                "market_cap",
                 "price",
                 "liquidity"
               ],
@@ -1217,9 +1225,6 @@
               "type": "string",
               "default": "USD"
             }
-          },
-          {
-            "$ref": "#/components/parameters/NetworkQuery"
           }
         ],
         "responses": {
@@ -1286,9 +1291,6 @@
               0.6,
               0.4
             ]
-          },
-          {
-            "$ref": "#/components/parameters/NetworkQuery"
           }
         ],
         "responses": {
@@ -2401,9 +2403,6 @@
             "type": "number"
           },
           "liquidity": {
-            "type": "number"
-          },
-          "market_cap": {
             "type": "number"
           }
         }
